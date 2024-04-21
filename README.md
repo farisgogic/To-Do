@@ -44,8 +44,6 @@ npm run dev
 ```
 
 
-Once the application is successfully running, you can access it in your web browser at http://localhost:8080/.
-
 ## Technologies Used
 - Vue.js
 - Vue Router
