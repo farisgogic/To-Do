@@ -39,7 +39,7 @@ npm install
 Run the Vue.js application using the following command:
 
 ```
-npm run serve
+npm run dev
 
 ```
 
