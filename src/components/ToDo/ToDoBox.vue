@@ -141,7 +141,7 @@ export default {
         },
         dragOver(index, listType) {
             if (this.draggingIndex !== -1 ) {
-                if (listType === 'todo') {
+                if (listType === 'done') {
                     const task = this.doneTasks[this.draggingIndex];
                     task.completed = false;
                     this.tasks.splice(index, 0, task);
