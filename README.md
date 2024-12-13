@@ -17,13 +17,13 @@ This is a Vue.js application that allows users to log in, register, and manage t
 1. Clone the repository to your local machine using the following command:
 
 ```
-git clone https://github.com/farisgogic/todoApp.git
+git clone https://github.com/farisgogic/fareToDoApp.git
 
 ```
 2. Open the terminal and navigate to the application directory:
 
 ```
-cd todobox
+cd fareToDoApp
 
 ```
 
