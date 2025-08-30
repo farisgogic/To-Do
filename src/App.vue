@@ -26,10 +26,28 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
-
 }
 
-body{
+body {
   background-color: #F1F1F1;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 1024px) {
+  #app {
+    margin-top: 70px;
+  }
+}
+
+@media (max-width: 768px) {
+  #app {
+    margin-top: 65px;
+  }
+}
+
+@media (max-width: 480px) {
+  #app {
+    margin-top: 60px;
+  }
 }
 </style>

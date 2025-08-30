@@ -4,7 +4,7 @@
         <div class="logo-container">
           <img src="/src/assets/Logo.png" alt="Logo">
         </div>
-        <form @submit.prevent="register">
+        <form @submit.prevent="register" class="register-form">
           <div class="form-group">
             <label for="username">Username:</label>
             <input type="text" id="username" v-model="username" required>
@@ -103,36 +103,40 @@
 .form-group {
   margin-bottom: 15px;
   text-align: left;
+  width: 100%;
 }
 
 input[type="email"],
 input[type="password"],
-input[type="text"],
+input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
 button {
   width: 100%;
   padding: 10px;
   font-size: 16px;
-}
-
-button {
+  box-sizing: border-box;
+  margin-bottom: 10px;
   background-color: #425BD9;
   color: #fff;
   border: none;
   cursor: pointer;
+  border-radius: 4px;
+}
+
+.register-form {
+  width: 100%;
+  max-width: 300px;
 }
 
 .input-label {
   display: block;
   text-align: left;
   margin-bottom: 5px;
-}
-
-.input-label,
-input[type="email"],
-input[type="password"],
-button {
-  margin-bottom: 5px;
-  width: 100%;
 }
 
 .password-input {
@@ -145,5 +149,58 @@ button {
   top: 50%;
   transform: translateY(-50%);
   cursor: pointer;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .login-container {
+    width: 90%;
+    height: auto;
+    min-height: 450px;
+    padding: 20px;
+  }
+  
+  .register-form {
+    max-width: 100%;
+  }
+  
+  .logo-container img {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    width: 95%;
+    height: auto;
+    min-height: 400px;
+    padding: 15px;
+  }
+  
+  .logo-container {
+    margin-bottom: 15px;
+  }
+  
+  .logo-container img {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .form-group {
+    margin-bottom: 12px;
+  }
+  
+  input[type="email"],
+  input[type="password"],
+  input[type="text"],
+  button {
+    padding: 8px;
+    font-size: 14px;
+  }
+  
+  button {
+    margin-bottom: 8px;
+  }
 }
 </style>
