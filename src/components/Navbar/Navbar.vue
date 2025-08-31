@@ -5,13 +5,28 @@
         <img src="@/assets/logowhite.png" alt="Logo">
         <h4>Todobox</h4>
       </div>
-      <div class="user-info" @click="toggleLogoutMenu">
+      <div class="user-info">
         <span class="username">{{ username }}</span>
-        <img src="@/assets/profile.png" alt="User Icon">
-      </div>
-      <div class="logout-menu" v-if="showLogoutMenu" @click="logout">
-        <i class="fa fa-sign-out"></i>
-        <p>Log out</p>
+        <div class="profile-container" @click="toggleLogoutMenu">
+          <img src="@/assets/profile.png" alt="User Icon" class="profile-image">
+          <div class="logout-dropdown" v-if="showLogoutMenu" @click.stop="logout">
+            <div class="dropdown-arrow"></div>
+            <div class="dropdown-content">
+              <div class="user-details">
+                <img src="@/assets/profile.png" alt="User Icon" class="dropdown-avatar">
+                <div class="user-text">
+                  <p class="username-display">{{ username }}</p>
+                  <p class="user-email">{{ userEmail }}</p>
+                </div>
+              </div>
+              <hr class="dropdown-divider">
+              <div class="logout-option">
+                <i class="fa fa-sign-out"></i>
+                <span>Sign out</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </nav>
@@ -22,7 +37,8 @@ export default {
   data() {
     return {
       showLogoutMenu: false,
-      username: ''
+      username: '',
+      userEmail: ''
     };
   },
   methods: {
@@ -30,43 +46,156 @@ export default {
       this.showLogoutMenu = !this.showLogoutMenu;
     },
     logout() {
+      this.showLogoutMenu = false;
       this.$router.replace('/');
+    },
+    closeDropdownOnOutsideClick(event) {
+      if (!this.$el.contains(event.target)) {
+        this.showLogoutMenu = false;
+      }
     }
-
   },
   created() {
     const storedUser = JSON.parse(localStorage.getItem('user'));
 
     if (storedUser) {
       this.username = storedUser.username;
+      this.userEmail = storedUser.email || 'user@example.com';
     } else {
       this.username = 'Username';
+      this.userEmail = 'user@example.com';
     }
+  },
+  
+  mounted() {
+    // Close dropdown when clicking outside
+    document.addEventListener('click', this.closeDropdownOnOutsideClick);
+  },
+  
+  beforeUnmount() {
+    document.removeEventListener('click', this.closeDropdownOnOutsideClick);
   }
 };
 </script>
 
 <style scoped>
-.logout-menu {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100px;
-  height: 40px;
-  text-align: center;
-  margin-left: 20px;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  padding: 10px;
+.profile-container {
+  position: relative;
   cursor: pointer;
-  position: absolute;
-  top: 100%;
-  left: 73%;
 }
 
-.logout-menu i {
-  margin-right: 5px;
+.profile-image {
+  transition: all 0.3s ease;
+}
+
+.profile-image:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 3px rgba(66, 91, 217, 0.3);
+}
+
+.logout-dropdown {
+  position: absolute;
+  top: calc(100% + 15px);
+  right: 0;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border: 1px solid #E5E5E5;
+  min-width: 280px;
+  z-index: 1000;
+  animation: dropdownSlide 0.3s ease-out;
+  overflow: hidden;
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-arrow {
+  position: absolute;
+  top: -8px;
+  right: 20px;
+  width: 16px;
+  height: 16px;
+  background-color: white;
+  border: 1px solid #E5E5E5;
+  border-bottom: none;
+  border-right: none;
+  transform: rotate(45deg);
+}
+
+.dropdown-content {
+  padding: 20px;
+}
+
+.user-details {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.dropdown-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: 2px solid #F0F2F5;
+}
+
+.user-text {
+  flex: 1;
+}
+
+.username-display {
+  margin: 0;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 15px;
+}
+
+.user-email {
+  margin: 2px 0 0 0;
+  color: #6c757d;
+  font-size: 13px;
+}
+
+.dropdown-divider {
+  border: none;
+  border-top: 1px solid #E9ECEF;
+  margin: 15px -20px;
+}
+
+.logout-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px;
+  margin: 0 -15px -15px -15px;
+  border-radius: 0 0 12px 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #6c757d;
+}
+
+.logout-option:hover {
+  background-color: #F8F9FA;
+  color: #425BD9;
+}
+
+.logout-option i {
+  font-size: 16px;
+}
+
+.logout-option span {
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .logo {
@@ -107,6 +236,7 @@ export default {
 .user-info {
   display: flex;
   align-items: center;
+  gap: 15px;
 }
 
 .user-info img {
@@ -117,7 +247,6 @@ export default {
 }
 
 .username {
-  margin-right: 30px;
   color: white;
 }
 
@@ -138,7 +267,6 @@ export default {
   
   .username {
     font-size: 14px;
-    margin-right: 15px;
   }
   
   .user-info img {
@@ -146,10 +274,29 @@ export default {
     height: 35px;
   }
   
-  .logout-menu {
-    width: 90px;
-    height: 35px;
-    left: 65%;
+  .logout-dropdown {
+    min-width: 260px;
+    right: -10px;
+  }
+  
+  .dropdown-content {
+    padding: 15px;
+  }
+  
+  .user-details {
+    margin-bottom: 12px;
+  }
+  
+  .dropdown-avatar {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .username-display {
+    font-size: 14px;
+  }
+  
+  .user-email {
     font-size: 12px;
   }
 }
@@ -166,7 +313,7 @@ export default {
   
   .username {
     font-size: 13px;
-    margin-right: 20px;
+    display: none;
   }
   
   .user-info img {
@@ -191,7 +338,7 @@ export default {
   
   .username {
     font-size: 12px;
-    margin-right: 10px;
+    display: none;
   }
   
   .user-info img {
@@ -199,12 +346,29 @@ export default {
     height: 30px;
   }
   
-  .logout-menu {
-    width: 80px;
-    height: 30px;
-    left: 60%;
+  .logout-dropdown {
+    min-width: 240px;
+    right: -15px;
+  }
+  
+  .dropdown-content {
+    padding: 12px;
+  }
+  
+  .dropdown-arrow {
+    right: 25px;
+  }
+  
+  .username-display {
+    font-size: 13px;
+  }
+  
+  .user-email {
     font-size: 11px;
-    padding: 5px;
+  }
+  
+  .logout-option {
+    padding: 10px 12px;
   }
 }
 </style>

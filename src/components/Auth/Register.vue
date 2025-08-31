@@ -27,6 +27,10 @@
           </div>
           <button type="submit">Register</button>
         </form>
+        
+        <div class="login-link">
+          <p>Already have an account? <span @click="goToLogin" class="link-text">Sign in</span></p>
+        </div>
       </div>
     </div>
   </template>
@@ -62,6 +66,10 @@
       localStorage.setItem('user', JSON.stringify(user));
 
       this.$router.push('/');
+    },
+    
+    goToLogin() {
+      this.$router.push('/');
     }
   }
   };
@@ -74,12 +82,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  min-height: 100vh;
   width: 100%;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .login-container {
@@ -88,44 +94,107 @@
   align-items: center;
   justify-content: center;
   background-color: #FFFFFF;
-  height: 500px;
-  width: 450px;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  max-width: 500px;
+  width: 100%;
+  padding: 40px 30px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid #E5E5E5;
 }
 
 .logo-container {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+}
+
+.logo-container img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
 }
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
   text-align: left;
   width: 100%;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #333;
+  font-weight: 500;
+  font-size: 14px;
 }
 
 input[type="email"],
 input[type="password"],
 input[type="text"] {
   width: 100%;
-  padding: 10px;
+  padding: 12px 16px;
   font-size: 16px;
   box-sizing: border-box;
+  border: 2px solid #E5E5E5;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background-color: #FAFAFA;
+}
+
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="text"]:focus {
+  outline: none;
+  border-color: #425BD9;
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(66, 91, 217, 0.1);
 }
 
 button {
   width: 100%;
-  padding: 10px;
+  padding: 14px;
   font-size: 16px;
+  font-weight: 600;
   box-sizing: border-box;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
   background-color: #425BD9;
   color: #fff;
   border: none;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  background-color: #2948B7;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(66, 91, 217, 0.3);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.login-link {
+  text-align: center;
+  margin-top: 15px;
+}
+
+.login-link p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.link-text {
+  color: #425BD9;
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.link-text:hover {
+  color: #2948B7;
+  text-decoration: underline;
 }
 
 .register-form {
@@ -145,41 +214,87 @@ button {
 
 .password-toggle {
   position: absolute;
-  right: 5px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   cursor: pointer;
+  color: #6c757d;
+  transition: color 0.3s ease;
+}
+
+.password-toggle:hover {
+  color: #425BD9;
 }
 
 /* Mobile Responsive Styles */
 @media (max-width: 768px) {
-  .login-container {
-    width: 90%;
-    height: auto;
-    min-height: 450px;
-    padding: 20px;
+  .body {
+    padding: 15px;
   }
   
-  .register-form {
-    max-width: 100%;
+  .login-container {
+    padding: 30px 25px;
+    max-width: 450px;
+  }
+  
+  .logo-container img {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .form-group {
+    margin-bottom: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .body {
+    padding: 10px;
+  }
+  
+  .login-container {
+    padding: 25px 20px;
+    border-radius: 8px;
+  }
+  
+  .logo-container {
+    margin-bottom: 25px;
   }
   
   .logo-container img {
     width: 60px;
     height: 60px;
   }
-}
-
-@media (max-width: 480px) {
-  .login-container {
-    width: 95%;
-    height: auto;
-    min-height: 400px;
-    padding: 15px;
+  
+  .form-group {
+    margin-bottom: 16px;
   }
   
-  .logo-container {
+  .form-group label {
+    font-size: 13px;
+  }
+  
+  input[type="email"],
+  input[type="password"],
+  input[type="text"] {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  
+  button {
+    padding: 12px;
+    font-size: 14px;
     margin-bottom: 15px;
+  }
+  
+  .login-link p {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 360px) {
+  .login-container {
+    padding: 20px 15px;
   }
   
   .logo-container img {
@@ -187,20 +302,20 @@ button {
     height: 50px;
   }
   
-  .form-group {
-    margin-bottom: 12px;
-  }
-  
   input[type="email"],
   input[type="password"],
-  input[type="text"],
-  button {
-    padding: 8px;
-    font-size: 14px;
+  input[type="text"] {
+    padding: 8px 12px;
+    font-size: 13px;
   }
   
   button {
-    margin-bottom: 8px;
+    padding: 10px;
+    font-size: 13px;
+  }
+  
+  .login-link p {
+    font-size: 12px;
   }
 }
 </style>

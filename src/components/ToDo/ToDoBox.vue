@@ -24,7 +24,7 @@
                             v-model="newTask.name" 
                             @keyup.enter="addTask"
                             @keyup.esc="cancelInput"
-                            placeholder="Unesite novi task..."
+                            placeholder="Enter new task..."
                             class="task-input"
                         >
                         <div class="input-buttons">
@@ -40,12 +40,15 @@
 
                 <div class="task-list" v-bind:style="{ maxHeight: maxListHeight + 'px' }">
                     <div class="drop-zone" 
+                         data-target-list="todo"
                          @dragover.prevent="dragOver($event, 'todo')"
                          @drop.prevent="drop($event, 'todo')"
                          :class="{ 'drag-over': isDragOver && draggedFromList !== 'todo' }">
                         <ul>
                             <li v-for="(task, index) in tasks" :key="'todo_' + index" class="task-item" 
-                                draggable="true"
+                                :draggable="!isMobile"
+                                :data-index="index"
+                                :data-list-type="'todo'"
                                 @dragstart="dragStart($event, index, 'todo')"
                                 @dragend="dragEnd">
                                 <div class="task-left">
@@ -65,7 +68,7 @@
                             </li>
                         </ul>
                         <div v-if="tasks.length === 0" class="empty-list">
-                            Povucite taskove ovdje
+                            {{ isMobile ? 'Add or drag tasks here' : 'Drag tasks here' }}
                         </div>
                     </div>
                 </div>
@@ -82,12 +85,15 @@
                 <hr>
                 <div class="task-list" v-bind:style="{ maxHeight: maxListHeight + 'px' }">
                     <div class="drop-zone" 
+                         data-target-list="done"
                          @dragover.prevent="dragOver($event, 'done')"
                          @drop.prevent="drop($event, 'done')"
                          :class="{ 'drag-over': isDragOver && draggedFromList !== 'done' }">
                         <ul>
                             <li v-for="(task, index) in doneTasks" :key="'done_' + index" class="task-item" 
-                                draggable="true"
+                                :draggable="!isMobile"
+                                :data-index="index"
+                                :data-list-type="'done'"
                                 @dragstart="dragStart($event, index, 'done')"
                                 @dragend="dragEnd">
                                 <div class="task-left">
@@ -100,7 +106,7 @@
                             </li>
                         </ul>
                         <div v-if="doneTasks.length === 0" class="empty-list">
-                            Povucite completed taskove ovdje
+                            {{ isMobile ? 'Completed tasks will appear here' : 'Drag completed tasks here' }}
                         </div>
                     </div>
                 </div>
@@ -130,8 +136,27 @@ export default {
             editedTaskName: '',
             draggedItem: null,
             draggedFromList: null,
-            isDragOver: false
+            isDragOver: false,
+            isMobile: false,
+            touchStartY: 0,
+            touchStartX: 0,
+            isDragging: false
         };
+    },
+    mounted() {
+        this.checkIfMobile();
+        window.addEventListener('resize', this.checkIfMobile);
+        
+        // Add touch event listeners for mobile drag and drop
+        this.$el.addEventListener('touchstart', this.handleTouchStart, { passive: false });
+        this.$el.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+        this.$el.addEventListener('touchend', this.handleTouchEnd, { passive: false });
+    },
+    beforeUnmount() {
+        window.removeEventListener('resize', this.checkIfMobile);
+        this.$el.removeEventListener('touchstart', this.handleTouchStart);
+        this.$el.removeEventListener('touchmove', this.handleTouchMove);
+        this.$el.removeEventListener('touchend', this.handleTouchEnd);
     },
     methods: {
         toggleInput() {
@@ -205,11 +230,19 @@ export default {
             };
             this.draggedFromList = listType;
             
+            // For mobile compatibility
+            if (event.dataTransfer) {
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/html', event.target.outerHTML);
+            }
+            
             event.target.style.opacity = '0.5';
+            event.target.classList.add('dragging');
         },
 
         dragEnd(event) {
             event.target.style.opacity = '1';
+            event.target.classList.remove('dragging');
             this.isDragOver = false;
         },
 
@@ -221,6 +254,7 @@ export default {
 
         drop(event, targetList) {
             this.isDragOver = false;
+            event.preventDefault();
             
             if (!this.draggedItem) return;
 
@@ -246,7 +280,114 @@ export default {
 
             this.draggedItem = null;
             this.draggedFromList = null;
-        }
+        },
+
+        // Mobile-specific methods
+        checkIfMobile() {
+            this.isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
+        },
+
+        handleTouchStart(event) {
+            if (!event.target.closest('.task-item')) return;
+            
+            this.touchStartY = event.touches[0].clientY;
+            this.touchStartX = event.touches[0].clientX;
+            
+            const taskItem = event.target.closest('.task-item');
+            const index = parseInt(taskItem.dataset.index);
+            const listType = taskItem.dataset.listType;
+            
+            this.draggedItem = {
+                index: index,
+                data: listType === 'todo' ? this.tasks[index] : this.doneTasks[index],
+                element: taskItem
+            };
+            this.draggedFromList = listType;
+        },
+
+        handleTouchMove(event) {
+            if (!this.draggedItem) return;
+            
+            event.preventDefault();
+            
+            const touch = event.touches[0];
+            const deltaY = Math.abs(touch.clientY - this.touchStartY);
+            const deltaX = Math.abs(touch.clientX - this.touchStartX);
+            
+            // Start dragging if moved enough
+            if (deltaY > 10 || deltaX > 10) {
+                this.isDragging = true;
+                this.draggedItem.element.style.opacity = '0.7';
+                this.draggedItem.element.style.transform = 'scale(1.05)';
+            }
+            
+            // Check which drop zone we're over
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            const dropZone = elementBelow?.closest('.drop-zone');
+            
+            if (dropZone) {
+                const targetList = dropZone.dataset.targetList;
+                if (targetList && targetList !== this.draggedFromList) {
+                    this.isDragOver = true;
+                } else {
+                    this.isDragOver = false;
+                }
+            }
+        },
+
+        handleTouchEnd(event) {
+            if (!this.draggedItem || !this.isDragging) {
+                this.resetDragState();
+                return;
+            }
+            
+            const touch = event.changedTouches[0];
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            const dropZone = elementBelow?.closest('.drop-zone');
+            
+            if (dropZone) {
+                const targetList = dropZone.dataset.targetList;
+                if (targetList && targetList !== this.draggedFromList) {
+                    this.performDrop(targetList);
+                }
+            }
+            
+            this.resetDragState();
+        },
+
+        performDrop(targetList) {
+            if (!this.draggedItem) return;
+
+            const sourceList = this.draggedFromList;
+            const sourceIndex = this.draggedItem.index;
+            const taskData = { ...this.draggedItem.data };
+
+            if (sourceList === 'todo') {
+                this.tasks.splice(sourceIndex, 1);
+            } else {
+                this.doneTasks.splice(sourceIndex, 1);
+            }
+
+            if (targetList === 'todo') {
+                taskData.completed = false;
+                this.tasks.push(taskData);
+            } else {
+                taskData.completed = true;
+                this.doneTasks.push(taskData);
+            }
+        },
+
+        resetDragState() {
+            if (this.draggedItem?.element) {
+                this.draggedItem.element.style.opacity = '1';
+                this.draggedItem.element.style.transform = 'scale(1)';
+            }
+            
+            this.draggedItem = null;
+            this.draggedFromList = null;
+            this.isDragOver = false;
+            this.isDragging = false;
+        },
     }
 };
 </script>
@@ -278,7 +419,7 @@ export default {
     overflow-y: auto;
     overflow-x: hidden;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     border: 1px solid #E5E5E5;
 }
 
@@ -357,49 +498,128 @@ export default {
 .drop-zone {
     min-height: 310px;
     transition: all 0.3s ease;
+    border-radius: 8px;
+    padding: 10px;
 }
 
 .drop-zone.drag-over {
     background-color: rgba(66, 91, 217, 0.1);
     border: 2px dashed #425BD9;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
 }
 
 .empty-list {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 150px;
+    height: 120px;
     color: #6c757d;
     font-style: italic;
-    font-size: 14px;
+    font-size: 13px;
+    text-align: center;
+    padding: 20px;
+    background-color: #F8F9FA;
+    border: 2px dashed #E9ECEF;
+    border-radius: 8px;
+    margin: 15px 10px;
 }
 
 .task-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 5px;
-    padding: 5px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
+    margin-bottom: 8px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background-color: #FAFAFA;
+    border: 1px solid #E9ECEF;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    min-height: 48px;
 }
 
 .task-item:hover {
-    background-color: #f8f9fa;
+    background-color: #f0f2f5;
+    border-color: #D1D5DB;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .task-item[draggable="true"] {
     cursor: move;
 }
 
+.task-item.dragging {
+    opacity: 0.7;
+    transform: scale(1.05);
+    z-index: 1000;
+}
+
+/* Mobile touch styles */
+@media (max-width: 768px) {
+    .task-item {
+        padding: 16px;
+        margin-bottom: 12px;
+        font-size: 15px;
+        min-height: 52px;
+        touch-action: manipulation;
+    }
+    
+    .task-item:active {
+        background-color: #e3f2fd;
+        transform: scale(0.98);
+    }
+    
+    .task-left {
+        gap: 14px;
+    }
+    
+    .task-left input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .task-right {
+        gap: 12px;
+    }
+}
+
 .task-left {
     display: flex;
     align-items: center;
+    flex: 1;
+    min-width: 0;
+    gap: 12px;
+}
+
+.task-left input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    accent-color: #425BD9;
+}
+
+.task-left span {
+    word-break: break-word;
+    line-height: 1.4;
+    text-align: left;
 }
 
 .task-right {
     display: flex;
     align-items: center;
+    gap: 8px;
+    margin-left: 10px;
 }
 
 .todo li {
@@ -413,6 +633,7 @@ export default {
 .task-list {
     text-align: left;
     overflow-y: auto;
+    padding: 0 5px;
 }
 
 .title {
@@ -420,6 +641,13 @@ export default {
     justify-content: space-between;
     align-items: center;
     margin: 0px 20px;
+    padding: 15px 0 10px 0;
+}
+
+.title h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-weight: 600;
 }
 
 .title-icons {
@@ -473,6 +701,25 @@ export default {
     margin-top: 120px;
 }
 
+/* Better scrollbar for webkit browsers */
+.task-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.task-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.task-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.task-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
 .todo-list h3 {
     margin-bottom: 10px;
 }
@@ -503,72 +750,96 @@ li {
 @media (max-width: 1024px) {
   .todo-list {
     flex-direction: column;
-    gap: 20px;
-    padding: 0 15px;
-    margin: 20px auto;
+    gap: 25px;
+    padding: 0 20px;
+    margin: 30px auto;
+    max-width: 600px;
   }
   
   .todo,
   .done {
     width: 100%;
-    max-width: 500px;
+    height: auto;
+    min-height: 400px;
     margin: 0 auto;
-    height: 350px;
   }
   
   .title h3 {
-    font-size: 18px;
+    font-size: 20px;
   }
   
   .title-icons i {
-    font-size: 18px;
+    font-size: 20px;
   }
   
   .task-list {
-    margin-left: 15px;
-    margin-right: 15px;
+    margin-left: 20px;
+    margin-right: 20px;
+  }
+  
+  .drop-zone {
+    min-height: 250px;
   }
 }
 
 @media (max-width: 768px) {
+  .todo-list {
+    padding: 0 15px;
+    gap: 20px;
+  }
+  
   .todo,
   .done {
-    max-width: 450px;
-    height: 320px;
+    min-height: 350px;
   }
   
   .title h3 {
-    font-size: 17px;
+    font-size: 18px;
   }
   
   .title-icons i {
-    font-size: 17px;
+    font-size: 18px;
+    padding: 8px;
   }
   
   .input-wrapper {
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
   
   .task-input {
     width: 100%;
+    padding: 12px 16px;
   }
   
   .input-buttons {
     width: 100%;
     justify-content: center;
+    gap: 10px;
+  }
+  
+  .add-btn,
+  .cancel-btn {
+    flex: 1;
+    min-width: 120px;
+  }
+  
+  .drop-zone {
+    min-height: 200px;
   }
 }
 
 @media (max-width: 480px) {
   .todo-list {
     padding: 0 10px;
-    margin: 15px auto;
+    margin: 20px auto;
+    gap: 15px;
   }
   
   .todo,
   .done {
-    height: 300px;
+    min-height: 320px;
+    border-radius: 8px;
   }
   
   .title {
@@ -582,40 +853,105 @@ li {
   .title-icons i {
     font-size: 16px;
     margin-right: 8px;
+    padding: 6px;
   }
   
   .task-list {
-    margin-left: 10px;
-    margin-right: 10px;
+    margin-left: 15px;
+    margin-right: 15px;
   }
   
   .task-item {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     font-size: 14px;
+    padding: 14px 16px;
+    min-height: 56px;
+  }
+  
+  .task-left {
+    gap: 16px;
+  }
+  
+  .task-left input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
   }
   
   .task-icon {
-    font-size: 14px;
+    font-size: 15px;
     margin-right: 8px;
+    padding: 4px;
   }
   
   .add-task-container {
-    padding: 8px 15px;
+    padding: 10px 15px;
   }
   
   .task-input {
     font-size: 14px;
-    padding: 8px 10px;
+    padding: 10px 14px;
+  }
+  
+  .add-btn,
+  .cancel-btn {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  
+  .empty-list {
+    font-size: 13px;
+    height: 150px;
+    padding: 15px;
+  }
+  
+  .drop-zone {
+    min-height: 180px;
+  }
+  
+  li {
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .todo-list {
+    padding: 0 8px;
+  }
+  
+  .todo,
+  .done {
+    min-height: 300px;
+  }
+  
+  .title {
+    margin: 0px 12px;
+  }
+  
+  .task-list {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+  
+  .task-item {
+    padding: 12px 14px;
+    font-size: 13px;
+    min-height: 50px;
+  }
+  
+  .task-left input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .task-input {
+    padding: 8px 12px;
+    font-size: 13px;
   }
   
   .add-btn,
   .cancel-btn {
     padding: 8px 10px;
     font-size: 13px;
-  }
-  
-  li {
-    margin-right: 15px;
   }
 }
 </style>
