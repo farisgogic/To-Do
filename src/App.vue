@@ -23,11 +23,33 @@ export default {
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  font-size: 100%;
+}
+
 body {
   margin: 0;
   padding: 0;
   background-color: #F1F1F1;
   overflow-x: hidden;
+  zoom: 1;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Remove overflow on large screens for login/register pages */
+@media (min-width: 1025px) {
+  body {
+    overflow: hidden;
+  }
+}
+
+/* Prevent zoom issues */
+@media screen and (max-device-width: 480px) {
+  html {
+    -webkit-text-size-adjust: none;
+  }
 }
 
 #app {
@@ -63,17 +85,6 @@ body {
 @media (max-width: 360px) {
   #app {
     margin-top: 60px;
-  }
-}
-
-/* Improve touch targets for mobile */
-@media (hover: none) and (pointer: coarse) {
-  button, 
-  .task-icon, 
-  .title-icons i,
-  input[type="checkbox"] {
-    min-height: 44px;
-    min-width: 44px;
   }
 }
 </style>

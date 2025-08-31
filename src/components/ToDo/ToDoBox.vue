@@ -46,7 +46,7 @@
                          :class="{ 'drag-over': isDragOver && draggedFromList !== 'todo' }">
                         <ul>
                             <li v-for="(task, index) in tasks" :key="'todo_' + index" class="task-item" 
-                                :draggable="!isMobile"
+                                draggable="true"
                                 :data-index="index"
                                 :data-list-type="'todo'"
                                 @dragstart="dragStart($event, index, 'todo')"
@@ -91,7 +91,7 @@
                          :class="{ 'drag-over': isDragOver && draggedFromList !== 'done' }">
                         <ul>
                             <li v-for="(task, index) in doneTasks" :key="'done_' + index" class="task-item" 
-                                :draggable="!isMobile"
+                                draggable="true"
                                 :data-index="index"
                                 :data-list-type="'done'"
                                 @dragstart="dragStart($event, index, 'done')"
@@ -157,6 +157,8 @@ export default {
         this.$el.removeEventListener('touchstart', this.handleTouchStart);
         this.$el.removeEventListener('touchmove', this.handleTouchMove);
         this.$el.removeEventListener('touchend', this.handleTouchEnd);
+        
+
     },
     methods: {
         toggleInput() {
@@ -288,7 +290,7 @@ export default {
         },
 
         handleTouchStart(event) {
-            if (!event.target.closest('.task-item')) return;
+            if (!this.isMobile || !event.target.closest('.task-item')) return;
             
             this.touchStartY = event.touches[0].clientY;
             this.touchStartX = event.touches[0].clientX;
@@ -306,19 +308,23 @@ export default {
         },
 
         handleTouchMove(event) {
-            if (!this.draggedItem) return;
+            if (!this.isMobile || !this.draggedItem) return;
             
             event.preventDefault();
             
             const touch = event.touches[0];
+            this.currentTouch = touch;
             const deltaY = Math.abs(touch.clientY - this.touchStartY);
             const deltaX = Math.abs(touch.clientX - this.touchStartX);
             
-            // Start dragging if moved enough
+            // Start dragging if moved enough - use same animation as desktop
             if (deltaY > 10 || deltaX > 10) {
-                this.isDragging = true;
-                this.draggedItem.element.style.opacity = '0.7';
-                this.draggedItem.element.style.transform = 'scale(1.05)';
+                if (!this.isDragging) {
+                    this.isDragging = true;
+                    // Use same styling as desktop drag
+                    this.draggedItem.element.style.opacity = '0.5';
+                    this.draggedItem.element.classList.add('dragging');
+                }
             }
             
             // Check which drop zone we're over
@@ -332,23 +338,30 @@ export default {
                 } else {
                     this.isDragOver = false;
                 }
+            } else {
+                this.isDragOver = false;
             }
         },
 
         handleTouchEnd(event) {
-            if (!this.draggedItem || !this.isDragging) {
+            // Only handle touch events on mobile devices
+            if (!this.isMobile) return;
+            
+            if (!this.draggedItem) {
                 this.resetDragState();
                 return;
             }
             
-            const touch = event.changedTouches[0];
-            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-            const dropZone = elementBelow?.closest('.drop-zone');
-            
-            if (dropZone) {
-                const targetList = dropZone.dataset.targetList;
-                if (targetList && targetList !== this.draggedFromList) {
-                    this.performDrop(targetList);
+            if (this.isDragging) {
+                const touch = event.changedTouches[0];
+                const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                const dropZone = elementBelow?.closest('.drop-zone');
+                
+                if (dropZone) {
+                    const targetList = dropZone.dataset.targetList;
+                    if (targetList && targetList !== this.draggedFromList) {
+                        this.performDrop(targetList);
+                    }
                 }
             }
             
@@ -381,13 +394,15 @@ export default {
             if (this.draggedItem?.element) {
                 this.draggedItem.element.style.opacity = '1';
                 this.draggedItem.element.style.transform = 'scale(1)';
+                this.draggedItem.element.classList.remove('dragging', 'mobile-dragging');
             }
             
             this.draggedItem = null;
             this.draggedFromList = null;
             this.isDragOver = false;
             this.isDragging = false;
-        },
+            this.currentTouch = null;
+        }
     }
 };
 </script>
@@ -564,6 +579,8 @@ export default {
     z-index: 1000;
 }
 
+
+
 /* Mobile touch styles */
 @media (max-width: 768px) {
     .task-item {
@@ -698,7 +715,7 @@ export default {
 }
 
 .todo-list {
-    margin-top: 120px;
+    margin-top: 60px;
 }
 
 /* Better scrollbar for webkit browsers */
